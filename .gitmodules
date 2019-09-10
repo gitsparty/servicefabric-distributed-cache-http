@@ -1,3 +1,6 @@
 [submodule "tools/AzureServiceFabricTools"]
 	path = tools/AzureServiceFabricTools
 	url = https://github.com/gitsparty/AzureServiceFabricTools.git
+[submodule "tests/vs-clt-http-loadtest"]
+	path = tests/vs-clt-http-loadtest
+	url = https://github.com/gitsparty/vs-clt-http-loadtest.git
