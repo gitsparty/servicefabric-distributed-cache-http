@@ -22,7 +22,7 @@ namespace Cache.Client
             return _partitionClient.InvokeWithRetryAsync(
                     (client) =>
                     {
-                        return client.GetAsync(key, client.CancellationToken);
+                        return client.GetAsync(key, token);
                     },
                     token);
         }
@@ -41,7 +41,7 @@ namespace Cache.Client
             return _partitionClient.InvokeWithRetryAsync(
                 (client) =>
                 {
-                    return client.RemoveAsync(key, client.CancellationToken);
+                    return client.RemoveAsync(key, token);
                 },
                 token);
         }
@@ -53,7 +53,7 @@ namespace Cache.Client
             return _partitionClient.InvokeWithRetryAsync(
                 (client) =>
                 {
-                    return client.SetAsync(key, value, client.CancellationToken);
+                    return client.SetAsync(key, value, token);
                 },
                 token);
         }
@@ -66,7 +66,7 @@ namespace Cache.Client
             return _partitionClient.InvokeWithRetryAsync(
                 (client) =>
                 {
-                    return client.CreateCachedItemAsync(key, value, client.CancellationToken);
+                    return client.CreateCachedItemAsync(key, value, token);
                 },
                 token);
         }
