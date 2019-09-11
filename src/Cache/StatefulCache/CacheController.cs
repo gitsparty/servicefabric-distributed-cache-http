@@ -8,6 +8,7 @@ using Cache.Abstractions;
 using Cache.Client;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.ServiceFabric.Services.Communication.Client;
+using Microsoft.ServiceFabric.Services.Client;
 
 namespace Cache.StatefulCache
 {
@@ -15,11 +16,27 @@ namespace Cache.StatefulCache
     [ApiController]
     public class CacheController : ControllerBase
     {
-        private readonly ICacheServiceClient _cacheClient;
+        private readonly CacheCommunicationClientFactory _clientFactory;
+        private readonly IStatefulContext _context;
+        private readonly ILocalCache _localCache;
 
-        public CacheController(ICacheServiceClient client)
+        public CacheController(
+            IStatefulContext context,
+            ILocalCache localCache)
         {
-            _cacheClient = client;
+            _clientFactory = new CacheCommunicationClientFactory(context, localCache);
+            _context = context;
+            _localCache = localCache;
+        }
+
+        private ICacheServiceClient GetCacheServiceClient(string key)
+        {
+            return new CacheServiceClient(
+                new CachePartitionClient(
+                    new ServicePartitionClient<CacheCommunicationClient>(
+                        _clientFactory,
+                        _context.ServiceUri,
+                        new ServicePartitionKey(key))));
         }
 
         [HttpGet("BaselinePerf")]
@@ -34,7 +51,7 @@ namespace Cache.StatefulCache
         {
             try
             {
-                var bytes = await _cacheClient.GetAsync(key, cancellationToken);
+                var bytes = await GetCacheServiceClient(key).GetAsync(key, cancellationToken);
 
                 if (bytes != null)
                     return Content(Encoding.UTF8.GetString(bytes));
@@ -57,7 +74,7 @@ namespace Cache.StatefulCache
             {
                 var content = await reader.ReadToEndAsync();
 
-                await _cacheClient.SetAsync(key, Encoding.UTF8.GetBytes(content), cancellationToken);
+                await GetCacheServiceClient(key).SetAsync(key, Encoding.UTF8.GetBytes(content), cancellationToken);
             }
         }
 
@@ -71,7 +88,7 @@ namespace Cache.StatefulCache
 
                 try
                 {
-                    var result = await _cacheClient.CreateCachedItemAsync(key, Encoding.UTF8.GetBytes(content), cancellationToken);
+                    var result = await GetCacheServiceClient(key).CreateCachedItemAsync(key, Encoding.UTF8.GetBytes(content), cancellationToken);
 
                     if (result == null)
                     {
@@ -94,7 +111,7 @@ namespace Cache.StatefulCache
         {
             try
             {
-                await _cacheClient.RemoveAsync(key, cancellationToken);
+                await GetCacheServiceClient(key).RemoveAsync(key, cancellationToken);
 
                 var res = new ObjectResult("Deleted");
                 res.StatusCode = (int)HttpStatusCode.OK;

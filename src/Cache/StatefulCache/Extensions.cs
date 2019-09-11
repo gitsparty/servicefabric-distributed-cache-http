@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Fabric;
+using Cache.Abstractions;
+using Cache.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
+using Microsoft.ServiceFabric.Services.Communication.Client;
 
 namespace Cache.StatefulCache
 {
