@@ -1,4 +1,4 @@
-﻿namespace Cache
+﻿namespace Cache.Abstractions
 {
     using System.Threading;
     using System.Threading.Tasks;

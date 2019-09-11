@@ -4,7 +4,10 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Cache.Abstractions;
+using Cache.Client;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.ServiceFabric.Services.Communication.Client;
 
 namespace Cache.StatefulCache
 {
@@ -12,12 +15,11 @@ namespace Cache.StatefulCache
     [ApiController]
     public class CacheController : ControllerBase
     {
-        private readonly ICache _cache;
+        private readonly ICacheServiceClient _cacheClient;
 
-        public CacheController(
-            ICache cache)
+        public CacheController(ICacheServiceClient client)
         {
-            _cache = cache;
+            _cacheClient = client;
         }
 
         [HttpGet("BaselinePerf")]
@@ -27,23 +29,12 @@ namespace Cache.StatefulCache
             return Task.FromResult(result);
         }
 
-        [HttpGet("GetAbsoluteExpirationCacheItem")]
-        public async Task<ActionResult<string>> GetAbsoluteExpirationCacheItem(CancellationToken cancellationToken)
-        {
-            var bytes = await _cache.GetAsync("AbsoluteExpirationCacheItem", cancellationToken);
-
-            if (bytes != null)
-                return Content(Encoding.UTF8.GetString(bytes));
-
-            return new EmptyResult();
-        }
-
         [HttpGet("{key}")]
         public async Task<ActionResult<string>> Get(string key, CancellationToken cancellationToken)
         {
             try
             {
-                var bytes = await _cache.GetAsync(key, cancellationToken);
+                var bytes = await _cacheClient.GetAsync(key, cancellationToken);
 
                 if (bytes != null)
                     return Content(Encoding.UTF8.GetString(bytes));
@@ -66,7 +57,7 @@ namespace Cache.StatefulCache
             {
                 var content = await reader.ReadToEndAsync();
 
-                await _cache.SetAsync(key, Encoding.UTF8.GetBytes(content), cancellationToken);
+                await _cacheClient.SetAsync(key, Encoding.UTF8.GetBytes(content), cancellationToken);
             }
         }
 
@@ -80,10 +71,7 @@ namespace Cache.StatefulCache
 
                 try
                 {
-                    var result = await _cache.CreateCachedItemAsync(
-                        key,
-                        Encoding.UTF8.GetBytes(content),
-                        cancellationToken);
+                    var result = await _cacheClient.CreateCachedItemAsync(key, Encoding.UTF8.GetBytes(content), cancellationToken);
 
                     if (result == null)
                     {
@@ -102,9 +90,22 @@ namespace Cache.StatefulCache
         }
 
         [HttpDelete("{key}")]
-        public async Task Delete(string key, CancellationToken cancellationToken)
+        public async Task<ActionResult<string>> Delete(string key, CancellationToken cancellationToken)
         {
-            await _cache.RemoveAsync(key, cancellationToken);
+            try
+            {
+                await _cacheClient.RemoveAsync(key, cancellationToken);
+
+                var res = new ObjectResult("Deleted");
+                res.StatusCode = (int)HttpStatusCode.OK;
+                return res;
+            }
+            catch (Exception ex)
+            {
+                var res = new ObjectResult(ex);
+                res.StatusCode = (int)HttpStatusCode.InternalServerError;
+                return res;
+            }
         }
     }
 }

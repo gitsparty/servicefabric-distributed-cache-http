@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Cache.Abstractions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.ServiceFabric.Data.Collections;
@@ -17,7 +18,7 @@ namespace Cache.StatefulCache
     /// <summary>
     /// An instance of this class is created for each service replica by the Service Fabric runtime.
     /// </summary>
-    internal sealed class CacheStatefulService : StatefulService, ICache
+    internal sealed class CacheStatefulService : StatefulService, ILocalCache
     {
         private const string cacheName = "Distributed.Cache";
 
@@ -53,7 +54,7 @@ namespace Cache.StatefulCache
                                                 .ConfigureServices(
                                                     services => services
                                                         .AddSingleton<StatefulServiceContext>(serviceContext)
-                                                        .AddSingleton<ICache>(this))
+                                                        .AddSingleton<ILocalCache>(this))
                                                 .UseContentRoot(Directory.GetCurrentDirectory())
                                                 .UseStartup<Cache.StatefulCache.Startup>()
                                                 .UseServiceFabricIntegration(listener, ServiceFabricIntegrationOptions.None)
@@ -74,7 +75,7 @@ namespace Cache.StatefulCache
                                             .ConfigureServices(
                                                 services => services
                                                     .AddSingleton<StatefulServiceContext>(serviceContext)
-                                                    .AddSingleton<ICache>(this))
+                                                    .AddSingleton<ILocalCache>(this))
                                             .UseContentRoot(Directory.GetCurrentDirectory())
                                             .UseStartup<Cache.StatefulCache.Startup>()
                                             .UseServiceFabricIntegration(listener, ServiceFabricIntegrationOptions.None)
