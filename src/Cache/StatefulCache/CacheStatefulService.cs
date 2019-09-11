@@ -53,7 +53,7 @@ namespace Cache.StatefulCache
                                                 .UseKestrel()
                                                 .ConfigureServices(
                                                     services => services
-                                                        .AddSingleton<StatefulServiceContext>(serviceContext)
+                                                        .AddSingleton<IStatefulContext>(new StatefulContextWrapper(this.Context))
                                                         .AddSingleton<ILocalCache>(this))
                                                 .UseContentRoot(Directory.GetCurrentDirectory())
                                                 .UseStartup<Cache.StatefulCache.Startup>()
@@ -74,7 +74,7 @@ namespace Cache.StatefulCache
                                             .UseKestrel()
                                             .ConfigureServices(
                                                 services => services
-                                                    .AddSingleton<StatefulServiceContext>(serviceContext)
+                                                    .AddSingleton<IStatefulContext>(new StatefulContextWrapper(this.Context))
                                                     .AddSingleton<ILocalCache>(this))
                                             .UseContentRoot(Directory.GetCurrentDirectory())
                                             .UseStartup<Cache.StatefulCache.Startup>()

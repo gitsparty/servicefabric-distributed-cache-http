@@ -5,6 +5,7 @@
     <Parameter Name="Cache_PartitionCount" DefaultValue="1" />
     <Parameter Name="Cache_TargetReplicaSetSize" DefaultValue="3" />
     <Parameter Name="Cache_PlacementConstraints" DefaultValue="(NodeType == NodeType0)" />
+    <Parameter Name="Cache_ServiceEndpointPrimary_Port" DefaultValue="80" />
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion 
        should match the Name and Version attributes of the ServiceManifest element defined in the 
@@ -12,6 +13,11 @@
   <ServiceManifestImport>
     <ServiceManifestRef ServiceManifestName="CachePkg" ServiceManifestVersion="1.0.0" />
     <ConfigOverrides />
+    <ResourceOverrides>
+      <Endpoints>
+        <Endpoint Name="ServiceEndpointPrimary" Port="[Cache_ServiceEndpointPrimary_Port]" />
+      </Endpoints>
+    </ResourceOverrides>
   </ServiceManifestImport>
   <DefaultServices>
     <!-- The section below creates instances of service types, when an instance of this 
