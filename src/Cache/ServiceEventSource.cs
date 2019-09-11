@@ -75,6 +75,23 @@ namespace Cache
             }
         }
 
+        [NonEvent]
+        public void ServiceMessage(StatelessServiceContext serviceContext, string message, params object[] args)
+        {
+            if (this.IsEnabled())
+            {
+                string finalMessage = string.Format(message, args);
+                ServiceMessage(
+                    serviceContext.ServiceName.ToString(),
+                    serviceContext.ServiceTypeName,
+                    serviceContext.InstanceId,
+                    serviceContext.CodePackageActivationContext.ApplicationName,
+                    serviceContext.CodePackageActivationContext.ApplicationTypeName,
+                    serviceContext.NodeContext.NodeName,
+                    finalMessage);
+            }
+        }
+
         // For very high-frequency events it might be advantageous to raise events using WriteEventCore API.
         // This results in more efficient parameter handling, but requires explicit allocation of EventData structure and unsafe code.
         // To enable this code path, define UNSAFE conditional compilation symbol and turn on unsafe code support in project properties.
@@ -145,6 +162,45 @@ namespace Cache
         {
             WriteEvent(ServiceRequestStopEventId, requestTypeName, exception);
         }
+
+        // For very high-frequency events it might be advantageous to raise events using WriteEventCore API.
+        // This results in more efficient parameter handling, but requires explicit allocation of EventData structure and unsafe code.
+        // To enable this code path, define UNSAFE conditional compilation symbol and turn on unsafe code support in project properties.
+        private const int ServiceMessageStatelessServiceEventId = 7;
+        [Event(ServiceMessageStatelessServiceEventId, Level = EventLevel.Informational, Message = "{7}")]
+        private
+#if UNSAFE
+        unsafe
+#endif
+        void ServiceMessage(
+            string serviceName,
+            string serviceTypeName,
+            long instanceId,
+            string applicationName,
+            string applicationTypeName,
+            string nodeName,
+            string message)
+        {
+#if !UNSAFE
+            WriteEvent(ServiceMessageEventId, serviceName, serviceTypeName, instanceId, applicationName, applicationTypeName, nodeName, message);
+#else
+            const int numArgs = 7;
+            fixed (char* pServiceName = serviceName, pServiceTypeName = serviceTypeName, pApplicationName = applicationName, pApplicationTypeName = applicationTypeName, pNodeName = nodeName, pMessage = message)
+            {
+                EventData* eventData = stackalloc EventData[numArgs];
+                eventData[0] = new EventData { DataPointer = (IntPtr) pServiceName, Size = SizeInBytes(serviceName) };
+                eventData[1] = new EventData { DataPointer = (IntPtr) pServiceTypeName, Size = SizeInBytes(serviceTypeName) };
+                eventData[2] = new EventData { DataPointer = (IntPtr) (&instanceId), Size = sizeof(long) };
+                eventData[4] = new EventData { DataPointer = (IntPtr) pApplicationName, Size = SizeInBytes(applicationName) };
+                eventData[5] = new EventData { DataPointer = (IntPtr) pApplicationTypeName, Size = SizeInBytes(applicationTypeName) };
+                eventData[6] = new EventData { DataPointer = (IntPtr) pNodeName, Size = SizeInBytes(nodeName) };
+                eventData[7] = new EventData { DataPointer = (IntPtr) pMessage, Size = SizeInBytes(message) };
+
+                WriteEventCore(ServiceMessageEventId, numArgs, eventData);
+            }
+#endif
+        }
+
         #endregion
 
         #region Private methods

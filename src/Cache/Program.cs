@@ -21,9 +21,9 @@ namespace Cache
                 // an instance of the class is created in this host process.
 
                 ServiceRuntime.RegisterServiceAsync("CacheType",
-                    context => new Cache(context)).GetAwaiter().GetResult();
+                    context => new StatefulCache.CacheStatefulService(context)).GetAwaiter().GetResult();
 
-                ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(Cache).Name);
+                ServiceEventSource.Current.ServiceTypeRegistered(Process.GetCurrentProcess().Id, typeof(StatefulCache.CacheStatefulService).Name);
 
                 // Prevents this host process from terminating so services keep running.
                 Thread.Sleep(Timeout.Infinite);

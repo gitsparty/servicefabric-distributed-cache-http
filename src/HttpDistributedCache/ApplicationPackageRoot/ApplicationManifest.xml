@@ -4,6 +4,7 @@
     <Parameter Name="Cache_MinReplicaSetSize" DefaultValue="3" />
     <Parameter Name="Cache_PartitionCount" DefaultValue="1" />
     <Parameter Name="Cache_TargetReplicaSetSize" DefaultValue="3" />
+    <Parameter Name="Cache_PlacementConstraints" DefaultValue="(NodeType == NodeType0)" />
   </Parameters>
   <!-- Import the ServiceManifest from the ServicePackage. The ServiceManifestName and ServiceManifestVersion 
        should match the Name and Version attributes of the ServiceManifest element defined in the 
@@ -21,6 +22,7 @@
     <Service Name="Cache" ServicePackageActivationMode="ExclusiveProcess">
       <StatefulService ServiceTypeName="CacheType" TargetReplicaSetSize="[Cache_TargetReplicaSetSize]" MinReplicaSetSize="[Cache_MinReplicaSetSize]">
         <UniformInt64Partition PartitionCount="[Cache_PartitionCount]" LowKey="-9223372036854775808" HighKey="9223372036854775807" />
+        <PlacementConstraints>[Cache_PlacementConstraints]</PlacementConstraints>
       </StatefulService>
     </Service>
   </DefaultServices>
