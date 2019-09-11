@@ -30,6 +30,8 @@ namespace Cache.Client
             IEnumerable<IExceptionHandler> exceptionHandlers = null)
             : base(resolver, CreateExceptionHandlers(exceptionHandlers))
         {
+            _localCache = localCache;
+            _context = context;
         }
 
         protected override void AbortClient(CacheCommunicationClient client)
@@ -65,7 +67,7 @@ namespace Cache.Client
 
         private bool IsLocalEndpoint(string address)
         {
-            return _context.NodeAddress.Contains(address, StringComparison.OrdinalIgnoreCase);
+            return address.Contains(_context.NodeAddress, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

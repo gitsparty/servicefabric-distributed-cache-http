@@ -1,12 +1,16 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Cache.Abstractions;
 using Cache.Client;
 using Microsoft.AspNetCore.Mvc;
+using System.Fabric;
+using System.Fabric.Query;
+using System.Linq;
 using Microsoft.ServiceFabric.Services.Communication.Client;
 using Microsoft.ServiceFabric.Services.Client;
 
@@ -19,6 +23,10 @@ namespace Cache.StatefulCache
         private readonly CacheCommunicationClientFactory _clientFactory;
         private readonly IStatefulContext _context;
         private readonly ILocalCache _localCache;
+        private static FabricClient _fabricClient;
+        private static ServicePartitionList _servicePartitionList;
+        private static DateTime _lastInitializeTime = DateTime.MinValue;
+        private object _lock = new object();
 
         public CacheController(
             IStatefulContext context,
@@ -27,16 +35,6 @@ namespace Cache.StatefulCache
             _clientFactory = new CacheCommunicationClientFactory(context, localCache);
             _context = context;
             _localCache = localCache;
-        }
-
-        private ICacheServiceClient GetCacheServiceClient(string key)
-        {
-            return new CacheServiceClient(
-                new CachePartitionClient(
-                    new ServicePartitionClient<CacheCommunicationClient>(
-                        _clientFactory,
-                        _context.ServiceUri,
-                        new ServicePartitionKey(key))));
         }
 
         [HttpGet("BaselinePerf")]
@@ -51,10 +49,13 @@ namespace Cache.StatefulCache
         {
             try
             {
-                var bytes = await GetCacheServiceClient(key).GetAsync(key, cancellationToken);
+                var client = await GetCacheServiceClient(key);
+                var bytes = await client.GetAsync(key, cancellationToken);
 
                 if (bytes != null)
+                {
                     return Content(Encoding.UTF8.GetString(bytes));
+                }
 
                 return new NotFoundResult();
             }
@@ -74,7 +75,8 @@ namespace Cache.StatefulCache
             {
                 var content = await reader.ReadToEndAsync();
 
-                await GetCacheServiceClient(key).SetAsync(key, Encoding.UTF8.GetBytes(content), cancellationToken);
+                var client = await GetCacheServiceClient(key);
+                await client.SetAsync(key, Encoding.UTF8.GetBytes(content), cancellationToken);
             }
         }
 
@@ -88,7 +90,8 @@ namespace Cache.StatefulCache
 
                 try
                 {
-                    var result = await GetCacheServiceClient(key).CreateCachedItemAsync(key, Encoding.UTF8.GetBytes(content), cancellationToken);
+                    var client = await GetCacheServiceClient(key);
+                    var result = await client.CreateCachedItemAsync(key, Encoding.UTF8.GetBytes(content), cancellationToken);
 
                     if (result == null)
                     {
@@ -111,7 +114,8 @@ namespace Cache.StatefulCache
         {
             try
             {
-                await GetCacheServiceClient(key).RemoveAsync(key, cancellationToken);
+                var client = await GetCacheServiceClient(key);
+                await client.RemoveAsync(key, cancellationToken);
 
                 var res = new ObjectResult("Deleted");
                 res.StatusCode = (int)HttpStatusCode.OK;
@@ -123,6 +127,73 @@ namespace Cache.StatefulCache
                 res.StatusCode = (int)HttpStatusCode.InternalServerError;
                 return res;
             }
+        }
+
+        private async Task<ICacheServiceClient> GetCacheServiceClient(string key)
+        {
+            var partitionInformation = await GetPartitionInformationForCacheKey(key);
+
+            var info = (Int64RangePartitionInformation)partitionInformation;
+            var resolvedPartition = new ServicePartitionKey(info.LowKey);
+
+            return new CacheServiceClient(
+                new CachePartitionClient(
+                    new ServicePartitionClient<CacheCommunicationClient>(
+                        _clientFactory,
+                        _context.ServiceUri,
+                        resolvedPartition)));
+        }
+
+        private async Task<ServicePartitionInformation> GetPartitionInformationForCacheKey(string cacheKey)
+        {
+            await InitializeAsync();
+
+            var md5 = MD5.Create();
+            var value = md5.ComputeHash(Encoding.ASCII.GetBytes(cacheKey));
+            var key = BitConverter.ToInt64(value, 0);
+
+            var partition = _servicePartitionList.Single(p => ((Int64RangePartitionInformation)p.PartitionInformation).LowKey <= key && ((Int64RangePartitionInformation)p.PartitionInformation).HighKey >= key);
+            return partition.PartitionInformation;
+        }
+
+        private async Task InitializeAsync()
+        {
+            bool initPartitionList = false;
+
+            if (InitializePartitionList() || RefreshPartitionList())
+            {
+                lock (_lock)
+                {
+                    if (InitializePartitionList())
+                    {
+                        _fabricClient = new FabricClient();
+                        initPartitionList = true;
+                    }
+
+                    if (RefreshPartitionList())
+                    {
+                        initPartitionList = true;
+                    }
+                }
+            }
+
+            if (initPartitionList && RefreshPartitionList())
+            {
+                // Note: there is a small chance that this gets executed multiple times when _servicePartitionList == null
+                _servicePartitionList = await _fabricClient.QueryManager.GetPartitionListAsync(_context.ServiceUri);
+            }
+
+            _lastInitializeTime = DateTime.UtcNow;
+        }
+
+        private bool InitializePartitionList()
+        {
+            return _fabricClient == null || _servicePartitionList == null;
+        }
+
+        private bool RefreshPartitionList()
+        {
+            return (DateTime.UtcNow - _lastInitializeTime) > TimeSpan.FromMinutes(10);
         }
     }
 }

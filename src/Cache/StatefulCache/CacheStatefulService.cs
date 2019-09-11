@@ -43,7 +43,7 @@ namespace Cache.StatefulCache
                     createCommunicationListener:
                         serviceContext =>
                             new KestrelCommunicationListener(
-                                serviceContext: serviceContext, 
+                                serviceContext: serviceContext,
                                 endpointName: "ServiceEndpointPrimary",
                                 build: (url, listener) =>
                                 {
@@ -60,28 +60,7 @@ namespace Cache.StatefulCache
                                                 .UseServiceFabricIntegration(listener, ServiceFabricIntegrationOptions.None)
                                                 .UseUrls(url)
                                                 .Build();
-                                })),
-                    new ServiceReplicaListener(
-                        name: "Secondary",
-                        listenOnSecondary: true,
-                        createCommunicationListener:
-                            serviceContext =>
-                            new KestrelCommunicationListener(serviceContext, "ServiceEndpointSecondary", (url, listener) =>
-                            {
-                                ServiceEventSource.Current.ServiceMessage(serviceContext, $"Starting secondary kestrel on {url}");
-
-                                return new WebHostBuilder()
-                                            .UseKestrel()
-                                            .ConfigureServices(
-                                                services => services
-                                                    .AddSingleton<IStatefulContext>(new StatefulContextWrapper(this.Context))
-                                                    .AddSingleton<ILocalCache>(this))
-                                            .UseContentRoot(Directory.GetCurrentDirectory())
-                                            .UseStartup<Cache.StatefulCache.Startup>()
-                                            .UseServiceFabricIntegration(listener, ServiceFabricIntegrationOptions.None)
-                                            .UseUrls(url)
-                                            .Build();
-                            }))
+                                }))
             };
         }
 
