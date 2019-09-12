@@ -8,11 +8,11 @@ namespace Cache.Client
 {
     public class CacheServiceClient : ICacheServiceClient
     {
-        IStatefulContext _context;
+        IRequestContext _context;
         ICachePartitionClient _partitionClient;
 
         public CacheServiceClient(
-            IStatefulContext context,
+            IRequestContext context,
             ICachePartitionClient client)
         {
             _context = context;

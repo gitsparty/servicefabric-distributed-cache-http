@@ -59,19 +59,19 @@ namespace Cache
         }
 
         [NonEvent]
-        public void ServiceMessage(IStatefulContext serviceContext, string message, params object[] args)
+        public void ServiceMessage(IRequestContext context, string message, params object[] args)
         {
             if (this.IsEnabled())
             {
                 string finalMessage = string.Format(message, args);
                 ServiceMessage(
-                    serviceContext.ServiceName.ToString(),
-                    serviceContext.ServiceTypeName,
-                    serviceContext.ReplicaId,
-                    serviceContext.PartitionId,
-                    serviceContext.ApplicationName,
-                    serviceContext.ApplicationTypeName,
-                    serviceContext.NodeName,
+                    context..ServiceName.ToString(),
+                    requestContext.ServiceTypeName,
+                    requestContext.ReplicaId,
+                    requestContext.PartitionId,
+                    requestContext.ApplicationName,
+                    requestContext.ApplicationTypeName,
+                    requestContext.NodeName,
                     finalMessage);
             }
         }

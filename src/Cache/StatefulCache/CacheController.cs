@@ -22,7 +22,7 @@ namespace Cache.StatefulCache
     public class CacheController : ControllerBase
     {
         private readonly CacheCommunicationClientFactory _clientFactory;
-        private readonly IStatefulContext _context;
+        private readonly IRequestContext _context;
         private readonly ILocalCache _localCache;
         private static FabricClient _fabricClient;
         private static ServicePartitionList _servicePartitionList;
@@ -30,7 +30,7 @@ namespace Cache.StatefulCache
         private object _lock = new object();
 
         public CacheController(
-            IStatefulContext context,
+            IRequestContext context,
             ILocalCache localCache)
         {
             _clientFactory = new CacheCommunicationClientFactory(context, localCache);

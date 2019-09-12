@@ -55,7 +55,7 @@ namespace Cache.StatefulCache
                                                 .UseKestrel()
                                                 .ConfigureServices(
                                                     services => services
-                                                        .AddSingleton<IStatefulContext>(new CacheStatefulServiceContext(this.Context))
+                                                        .AddSingleton<ICacheSvcStateContext>(new CacheStatefulServiceContext(this.Context))
                                                         .AddSingleton<ILocalCache>(this))
                                                 .UseContentRoot(Directory.GetCurrentDirectory())
                                                 .UseStartup<Cache.StatefulCache.Startup>()

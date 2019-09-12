@@ -4,7 +4,7 @@
     using System.Fabric;
     using Cache.Abstractions;
 
-    public class CacheStatefulServiceContext : IStatefulContext
+    public class CacheStatefulServiceContext : ICacheSvcStateContext
     {
         private StatefulServiceContext _context;
 

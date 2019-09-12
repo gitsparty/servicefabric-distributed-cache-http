@@ -2,7 +2,7 @@
 {
     using System;
 
-    public interface IStatefulContext
+    public interface ICacheSvcStateContext
     {
         Uri ServiceUri { get; }
 

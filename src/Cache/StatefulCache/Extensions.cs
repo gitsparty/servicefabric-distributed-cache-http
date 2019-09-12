@@ -15,6 +15,7 @@ namespace Cache.StatefulCache
         {
             if (services == null) throw new ArgumentNullException(nameof(services));
 
+            services.AddScoped<IRequestContext, Request>();
             return services;
         }
     }

@@ -10,11 +10,11 @@
 
     public class CacheCommunicationClient : ICommunicationClient, ICache
     {
-        private IStatefulContext _context;
+        private ICacheSvcStateContext _context;
 
         public CacheCommunicationClient(
             CancellationToken token,
-            IStatefulContext context,
+            IRequestContext context,
             HttpClient httpClient,
             string address,
             ILocalCache localCache)

@@ -21,10 +21,10 @@ namespace Cache.Client
     {
         private HttpClient _httpClient = new HttpClient();
         private ILocalCache _localCache;
-        private IStatefulContext _context;
+        private IRequestContext _context;
 
         public CacheCommunicationClientFactory(
-            IStatefulContext context,
+            IRequestContext context,
             ILocalCache localCache,
             IServicePartitionResolver resolver = null,
             IEnumerable<IExceptionHandler> exceptionHandlers = null)
@@ -73,9 +73,11 @@ namespace Cache.Client
 
         private bool IsLocalEndpoint(string address)
         {
-            ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClientFactory::IsLocalEndpoint: ValidateClient. Address = {address}. ContextNodeAddress = {_context.NodeAddress}");
+            ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClientFactory::IsLocalEndpoint: ValidateClient. Address = {address}. ContextNodeAddress = {_context.StatefulServiceContext.NodeAddress}");
 
-            return address.Contains(_context.NodeAddress, StringComparison.OrdinalIgnoreCase);
+            return address.Contains(
+                _context.StatefulServiceContext.NodeAddress,
+                StringComparison.OrdinalIgnoreCase);
         }
     }
 }
