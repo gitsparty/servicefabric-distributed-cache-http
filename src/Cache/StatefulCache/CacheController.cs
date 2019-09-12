@@ -149,6 +149,7 @@ namespace Cache.StatefulCache
 
             var info = (Int64RangePartitionInformation)partitionInformation;
             var resolvedPartition = new ServicePartitionKey(info.LowKey);
+            var retrySettings = new OperationRetrySettings(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10), 3);
 
             return new CacheServiceClient(
                 _context,
@@ -156,7 +157,8 @@ namespace Cache.StatefulCache
                     new ServicePartitionClient<CacheCommunicationClient>(
                         _clientFactory,
                         _context.StatefulServiceContext.ServiceUri,
-                        resolvedPartition)));
+                        resolvedPartition,
+                        retrySettings: retrySettings)));
         }
 
         private async Task<ServicePartitionInformation> GetPartitionInformationForCacheKey(string cacheKey)
