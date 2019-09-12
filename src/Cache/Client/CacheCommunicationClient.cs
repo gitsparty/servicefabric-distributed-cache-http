@@ -6,6 +6,7 @@
     using System.Threading.Tasks;
     using System.Net.Http;
     using Cache.Abstractions;
+    using Cache.StatefulCache;
     using Microsoft.ServiceFabric.Services.Communication.Client;
 
     public class CacheCommunicationClient : ICommunicationClient, ICache
@@ -46,7 +47,7 @@
         {
             if (LocalCache != null)
             {
-                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::GetAsync: Local: {key}");
+                _context.WriteEvent($"CacheCommunicationClient::GetAsync: Local: {key}");
                 return await LocalCache.GetAsync(key, token);
             }
             else
@@ -54,7 +55,7 @@
                 var builder = new UriBuilder(Url);
                 builder.Path = $"/api/cache/{key}";
 
-                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::GetAsync: Remote: {builder.Uri}");
+                _context.WriteEvent($"CacheCommunicationClient::GetAsync: Remote: {builder.Uri}");
                 return await HttpClient.GetByteArrayAsync(builder.Uri);
             }
         }
@@ -72,14 +73,14 @@
         {
             if (LocalCache != null)
             {
-                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::RemoveAsync: Local: {key}");
+                _context.WriteEvent($"CacheCommunicationClient::RemoveAsync: Local: {key}");
                 return LocalCache.RemoveAsync(key, token);
             }
             else
             {
                 var builder = new UriBuilder(Url);
                 builder.Path = $"/api/cache/{key}";
-                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::RemoveAsync: Remote: {builder.Uri}");
+                _context.WriteEvent($"CacheCommunicationClient::RemoveAsync: Remote: {builder.Uri}");
                 return HttpClient.DeleteAsync(builder.Uri);
             }
         }
@@ -91,14 +92,14 @@
         {
             if (LocalCache != null)
             {
-                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::SetAsync: Local: {key}");
+                _context.WriteEvent($"CacheCommunicationClient::SetAsync: Local: {key}");
                 await LocalCache.SetAsync(key, value, token);
             }
             else
             {
                 var builder = new UriBuilder(Url);
                 builder.Path = $"/api/cache/{key}";
-                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::SetAsync: Remote: {builder.Uri}");
+                _context.WriteEvent($"CacheCommunicationClient::SetAsync: Remote: {builder.Uri}");
                 var byteContent = new ByteArrayContent(value);
                 await HttpClient.PutAsync(builder.Uri, byteContent);
             }
@@ -111,14 +112,14 @@
         {
             if (LocalCache != null)
             {
-                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::CreateCachedItemAsync: Local: {key}");
+                _context.WriteEvent($"CacheCommunicationClient::CreateCachedItemAsync: Local: {key}");
                 return await LocalCache.CreateCachedItemAsync(key, value, token);
             }
             else
             {
                 var builder = new UriBuilder(Url);
                 builder.Path = $"/api/cache/{key}";
-                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::CreateCachedItemAsync: Remote: {builder.Uri}");
+                _context.WriteEvent($"CacheCommunicationClient::CreateCachedItemAsync: Remote: {builder.Uri}");
 
                 var byteContent = new ByteArrayContent(value);
                 var ret = await HttpClient.PostAsync(builder.Uri, byteContent);

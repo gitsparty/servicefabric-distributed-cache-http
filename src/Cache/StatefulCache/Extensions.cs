@@ -18,5 +18,10 @@ namespace Cache.StatefulCache
             services.AddScoped<IRequestContext, RequestContext>();
             return services;
         }
+
+        public static void WriteEvent(this IRequestContext context, string message)
+        {
+            ServiceEventSource.Current.ServiceMessage(context, message);
+        }
     }
 }

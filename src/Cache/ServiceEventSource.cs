@@ -65,6 +65,7 @@ namespace Cache
             {
                 string finalMessage = string.Format(message, args);
                 ServiceMessage(
+                    context.CorrelationId,
                     context.StatefulServiceContext.ServiceName.ToString(),
                     context.StatefulServiceContext.ServiceTypeName,
                     context.StatefulServiceContext.ReplicaId,
@@ -86,6 +87,7 @@ namespace Cache
         unsafe
 #endif
         void ServiceMessage(
+            string correlationId,
             string serviceName, 
             string serviceTypeName, 
             long replicaOrInstanceId,
@@ -96,7 +98,7 @@ namespace Cache
             string message)
         {
 #if !UNSAFE
-            WriteEvent(ServiceMessageEventId, serviceName, serviceTypeName, replicaOrInstanceId, partitionId, applicationName, applicationTypeName, nodeName, message);
+            WriteEvent(ServiceMessageEventId, correlationId, serviceName, serviceTypeName, replicaOrInstanceId, partitionId, applicationName, applicationTypeName, nodeName, message);
 #else
             const int numArgs = 8;
             fixed (char* pServiceName = serviceName, pServiceTypeName = serviceTypeName, pApplicationName = applicationName, pApplicationTypeName = applicationTypeName, pNodeName = nodeName, pMessage = message)

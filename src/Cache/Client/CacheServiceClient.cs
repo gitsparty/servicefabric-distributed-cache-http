@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using System.Fabric;
 using Cache.Abstractions;
+using Cache.StatefulCache;
 using Microsoft.ServiceFabric.Services.Communication.Client;
 
 namespace Cache.Client
@@ -26,7 +27,7 @@ namespace Cache.Client
             return _partitionClient.InvokeWithRetryAsync(
                     (client) =>
                     {
-                        ServiceEventSource.Current.ServiceMessage(_context, $"CacheServiceClient::GetAsync: GetAsync {key}");
+                        _context.WriteEvent($"CacheServiceClient::GetAsync: GetAsync {key}");
                         return client.GetAsync(key, token);
                     },
                     token);
@@ -46,7 +47,7 @@ namespace Cache.Client
             return _partitionClient.InvokeWithRetryAsync(
                 (client) =>
                 {
-                    ServiceEventSource.Current.ServiceMessage(_context, $"RemoveAsync::GetAsync: GetAsync {key}");
+                    _context.WriteEvent($"RemoveAsync::GetAsync: GetAsync {key}");
                     return client.RemoveAsync(key, token);
                 },
                 token);
@@ -59,7 +60,7 @@ namespace Cache.Client
             return _partitionClient.InvokeWithRetryAsync(
                 (client) =>
                 {
-                    ServiceEventSource.Current.ServiceMessage(_context, $"RemoveAsync::SetAsync: GetAsync {key}");
+                    _context.WriteEvent($"RemoveAsync::SetAsync: GetAsync {key}");
                     return client.SetAsync(key, value, token);
                 },
                 token);
@@ -73,7 +74,7 @@ namespace Cache.Client
             return _partitionClient.InvokeWithRetryAsync(
                 (client) =>
                 {
-                    ServiceEventSource.Current.ServiceMessage(_context, $"CreateCachedItemAsync::SetAsync: GetAsync {key}");
+                    _context.WriteEvent($"CreateCachedItemAsync::SetAsync: GetAsync {key}");
                     return client.CreateCachedItemAsync(key, value, token);
                 },
                 token);

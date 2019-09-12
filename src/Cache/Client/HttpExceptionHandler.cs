@@ -10,11 +10,22 @@ namespace Cache.Client
     using System.Net.Http;
     using System.Net.Sockets;
     using Microsoft.ServiceFabric.Services.Communication.Client;
+    using Cache.Abstractions;
+    using Cache.StatefulCache;
 
     public class HttpExceptionHandler : IExceptionHandler
     {
+        IRequestContext _context;
+
+        public HttpExceptionHandler(IRequestContext context)
+        {
+            _context = context;
+        }
+
         public bool TryHandleException(ExceptionInformation exceptionInformation, OperationRetrySettings retrySettings, out ExceptionHandlingResult result)
         {
+            _context.WriteEvent($"HttpExceptionHandler::TryHandleException: Encountered Exception {exceptionInformation.Exception}");
+
             if (exceptionInformation.Exception is TimeoutException)
             {
                 result = new ExceptionHandlingRetryResult(exceptionInformation.Exception, false, retrySettings, retrySettings.DefaultMaxRetryCount);
@@ -35,12 +46,13 @@ namespace Cache.Client
 
             if (httpException != null)
             {
+                _context.WriteEvent($"HttpExceptionHandler::TryHandleException: HttpRequestException {httpException}");
+
                 result = new ExceptionHandlingRetryResult(exceptionInformation.Exception, false, retrySettings, retrySettings.DefaultMaxRetryCount);
                 return true;
             }
 
             WebException we = exceptionInformation.Exception as WebException;
-
             if (we == null)
             {
                 we = exceptionInformation.Exception.InnerException as WebException;
@@ -48,26 +60,17 @@ namespace Cache.Client
 
             if (we != null)
             {
+                _context.WriteEvent($"HttpExceptionHandler::TryHandleException: WebException {we}");
+
                 HttpWebResponse errorResponse = we.Response as HttpWebResponse;
 
                 if (we.Status == WebExceptionStatus.ProtocolError)
                 {
-                    if (errorResponse.StatusCode == HttpStatusCode.NotFound)
-                    {
-                        // This could either mean we requested an endpoint that does not exist in the service API (a user error)
-                        // or the address that was resolved by fabric client is stale (transient runtime error) in which we should re-resolve.
-                        result = new ExceptionHandlingRetryResult(exceptionInformation.Exception, false, retrySettings, retrySettings.DefaultMaxRetryCount);
-                        return true;
-                    }
+                    _context.WriteEvent($"HttpExceptionHandler::TryHandleException: HttpWebResponse {errorResponse}");
+                    _context.WriteEvent($"HttpExceptionHandler::TryHandleException: HttpWebResponse Status Code {errorResponse.StatusCode} Decription = {errorResponse.StatusDescription}");
 
-                    if (errorResponse.StatusCode == HttpStatusCode.InternalServerError)
-                    {
-                        // The address is correct, but the server processing failed.
-                        // This could be due to conflicts when writing the word to the dictionary.
-                        // Retry the operation without re-resolving the address.
-                        result = new ExceptionHandlingRetryResult(exceptionInformation.Exception, true, retrySettings, retrySettings.DefaultMaxRetryCount);
-                        return true;
-                    }
+                    result = null;
+                    return false;
                 }
 
                 if (we.Status == WebExceptionStatus.Timeout ||
