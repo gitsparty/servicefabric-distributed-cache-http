@@ -56,7 +56,16 @@
                 builder.Path = $"/api/cache/{key}";
 
                 _context.WriteEvent($"CacheCommunicationClient::GetAsync: Remote: {builder.Uri}");
-                return await HttpClient.GetByteArrayAsync(builder.Uri);
+                var ret = await HttpClient.GetAsync(builder.Uri);
+
+                if (ret.IsSuccessStatusCode)
+                {
+                    return await ret.Content.ReadAsByteArrayAsync();
+                }
+                else
+                {
+                    return null;
+                }
             }
         }
 

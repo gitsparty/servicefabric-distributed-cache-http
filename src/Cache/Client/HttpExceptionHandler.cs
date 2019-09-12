@@ -48,8 +48,8 @@ namespace Cache.Client
             {
                 _context.WriteEvent($"HttpExceptionHandler::TryHandleException: HttpRequestException {httpException}");
 
-                result = new ExceptionHandlingRetryResult(exceptionInformation.Exception, false, retrySettings, retrySettings.DefaultMaxRetryCount);
-                return true;
+                result = null;
+                return false;
             }
 
             WebException we = exceptionInformation.Exception as WebException;

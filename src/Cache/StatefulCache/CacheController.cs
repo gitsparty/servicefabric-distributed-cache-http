@@ -48,6 +48,7 @@ namespace Cache.StatefulCache
         [HttpGet("{key}")]
         public async Task<ActionResult<string>> Get(string key, CancellationToken cancellationToken)
         {
+            var request = HttpContext.Request;
             _context.WriteEvent($"CacheController::Get {this.HttpContext.Request.GetEncodedUrl()}");
 
             try
@@ -57,14 +58,16 @@ namespace Cache.StatefulCache
 
                 if (bytes != null)
                 {
+                    _context.WriteEvent($"CacheController::End {this.HttpContext.Request.GetEncodedUrl()} Success");
                     return Content(Encoding.UTF8.GetString(bytes));
                 }
 
+                _context.WriteEvent($"CacheController::End {this.HttpContext.Request.GetEncodedUrl()} NotFound");
                 return new NotFoundResult();
             }
             catch (Exception ex)
             {
-                _context.WriteEvent($"CacheController::Get Exception {ex}");
+                _context.WriteEvent($"CacheController::Get URL = {request.GetEncodedUrl()} InternalServerError Exception {ex}");
                 var res = new ObjectResult(ex);
                 res.StatusCode = (int)HttpStatusCode.InternalServerError;
                 return res;
@@ -104,14 +107,16 @@ namespace Cache.StatefulCache
 
                     if (result == null)
                     {
+                        _context.WriteEvent($"CacheController::Post URL = {request.GetEncodedUrl()} Conflict Exception");
                         return new ConflictResult();
                     }
 
+                    _context.WriteEvent($"CacheController::Post URL = {request.GetEncodedUrl()} Success");
                     return Created("Created", Encoding.UTF8.GetString(result));
                 }
                 catch (Exception ex)
                 {
-                    _context.WriteEvent($"CacheController::Post Exception {ex}");
+                    _context.WriteEvent($"CacheController::Post URL = {request.GetEncodedUrl()} Exception {ex}");
                     var res = new ObjectResult(ex);
                     res.StatusCode = (int)HttpStatusCode.InternalServerError;
                     return res;
@@ -130,13 +135,14 @@ namespace Cache.StatefulCache
                 var client = await GetCacheServiceClient(key);
                 await client.RemoveAsync(key, cancellationToken);
 
+                _context.WriteEvent($"CacheController::Delete URL = {request.GetEncodedUrl()} Success");
                 var res = new ObjectResult("Deleted");
                 res.StatusCode = (int)HttpStatusCode.OK;
                 return res;
             }
             catch (Exception ex)
             {
-                _context.WriteEvent($"CacheController::Put Exception {ex}");
+                _context.WriteEvent($"CacheController::Delete URL = {request.GetEncodedUrl()} Exception {ex}");
                 var res = new ObjectResult(ex);
                 res.StatusCode = (int)HttpStatusCode.InternalServerError;
                 return res;
