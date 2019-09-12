@@ -3,9 +3,9 @@
     using System;
     using Cache.Abstractions;
 
-    public class Request : IRequestContext
+    public class RequestContext : IRequestContext
     {
-        public Request(ICacheSvcStateContext context)
+        public RequestContext(ICacheSvcStateContext context)
         {
             this.StatefulServiceContext = context;
             this.CorrelationId = Guid.NewGuid().ToString();

@@ -10,7 +10,7 @@
 
     public class CacheCommunicationClient : ICommunicationClient, ICache
     {
-        private ICacheSvcStateContext _context;
+        private IRequestContext _context;
 
         public CacheCommunicationClient(
             CancellationToken token,

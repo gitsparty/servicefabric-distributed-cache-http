@@ -65,13 +65,13 @@ namespace Cache
             {
                 string finalMessage = string.Format(message, args);
                 ServiceMessage(
-                    context..ServiceName.ToString(),
-                    requestContext.ServiceTypeName,
-                    requestContext.ReplicaId,
-                    requestContext.PartitionId,
-                    requestContext.ApplicationName,
-                    requestContext.ApplicationTypeName,
-                    requestContext.NodeName,
+                    context.StatefulServiceContext.ServiceName.ToString(),
+                    context.StatefulServiceContext.ServiceTypeName,
+                    context.StatefulServiceContext.ReplicaId,
+                    context.StatefulServiceContext.PartitionId,
+                    context.StatefulServiceContext.ApplicationName,
+                    context.StatefulServiceContext.ApplicationTypeName,
+                    context.StatefulServiceContext.NodeName,
                     finalMessage);
             }
         }

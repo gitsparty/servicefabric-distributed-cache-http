@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Cache;
 using Cache.Abstractions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -48,7 +49,7 @@ namespace Cache.StatefulCache
                                 build: (url, listener) =>
                                 {
                                     ServiceEventSource.Current.ServiceMessage(
-                                        (CacheStatefulServiceContext)serviceContext, 
+                                        new RequestContext((CacheStatefulServiceContext)serviceContext), 
                                         $"Starting primary kestrel on {url}");
 
                                     return new WebHostBuilder()

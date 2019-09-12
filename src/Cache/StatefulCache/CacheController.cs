@@ -155,7 +155,7 @@ namespace Cache.StatefulCache
                 new CachePartitionClient(
                     new ServicePartitionClient<CacheCommunicationClient>(
                         _clientFactory,
-                        _context.ServiceUri,
+                        _context.StatefulServiceContext.ServiceUri,
                         resolvedPartition)));
         }
 
@@ -198,7 +198,7 @@ namespace Cache.StatefulCache
             {
                 // Note: there is a small chance that this gets executed multiple times when _servicePartitionList == null
                 ServiceEventSource.Current.ServiceMessage(_context, $"CacheController::InitializeAsync: GetPartitionListAsync");
-                _servicePartitionList = await _fabricClient.QueryManager.GetPartitionListAsync(_context.ServiceUri);
+                _servicePartitionList = await _fabricClient.QueryManager.GetPartitionListAsync(_context.StatefulServiceContext.ServiceUri);
             }
 
             _lastInitializeTime = DateTime.UtcNow;
