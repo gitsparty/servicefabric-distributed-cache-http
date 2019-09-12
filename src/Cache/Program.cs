@@ -16,7 +16,7 @@ namespace Cache
         {
             try
             {
-                ConfigureServicePoints();
+                ConfigureLimits();
 
                 // The ServiceManifest.XML file defines one or more service type names.
                 // Registering a service maps a service type name to a .NET type.
@@ -38,18 +38,20 @@ namespace Cache
             }
         }
 
-        private static void ConfigureServicePoints()
+        private static void ConfigureLimits()
         {
             // Tean down the service point afer an hour if there are no connections
             ServicePointManager.MaxServicePointIdleTime = 60 * 60 * 1000;
             ServicePointManager.UseNagleAlgorithm = false;
             ServicePointManager.Expect100Continue = false;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            ServicePointManager.DefaultConnectionLimit = 200;
+            ServicePointManager.DefaultConnectionLimit = 20000;
+            ThreadPool.SetMinThreads(500, 500);
+            ThreadPool.SetMaxThreads(2000, 2000);
 
             // Azure LB times out a TCP connection in 4 minutes. Keep the connection alive.
             // https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-tcp-idle-timeout
-            ServicePointManager.SetTcpKeepAlive(true, 15000, 15000);
+            // ServicePointManager.SetTcpKeepAlive(true, 15000, 15000);
         }
     }
 }
