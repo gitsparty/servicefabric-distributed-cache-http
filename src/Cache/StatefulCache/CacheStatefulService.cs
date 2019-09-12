@@ -47,13 +47,15 @@ namespace Cache.StatefulCache
                                 endpointName: "ServiceEndpointPrimary",
                                 build: (url, listener) =>
                                 {
-                                    ServiceEventSource.Current.ServiceMessage(serviceContext, $"Starting primary kestrel on {url}");
+                                    ServiceEventSource.Current.ServiceMessage(
+                                        (CacheStatefulServiceContext)serviceContext, 
+                                        $"Starting primary kestrel on {url}");
 
                                     return new WebHostBuilder()
                                                 .UseKestrel()
                                                 .ConfigureServices(
                                                     services => services
-                                                        .AddSingleton<IStatefulContext>(new StatefulContextWrapper(this.Context))
+                                                        .AddSingleton<IStatefulContext>(new CacheStatefulServiceContext(this.Context))
                                                         .AddSingleton<ILocalCache>(this))
                                                 .UseContentRoot(Directory.GetCurrentDirectory())
                                                 .UseStartup<Cache.StatefulCache.Startup>()

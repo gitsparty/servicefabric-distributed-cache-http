@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Fabric;
 using System.Fabric.Query;
 using System.Linq;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.ServiceFabric.Services.Communication.Client;
 using Microsoft.ServiceFabric.Services.Client;
 
@@ -47,6 +48,8 @@ namespace Cache.StatefulCache
         [HttpGet("{key}")]
         public async Task<ActionResult<string>> Get(string key, CancellationToken cancellationToken)
         {
+            ServiceEventSource.Current.ServiceMessage(_context, $"CacheController::Get {this.HttpContext.Request.GetEncodedUrl()}");
+
             try
             {
                 var client = await GetCacheServiceClient(key);
@@ -61,6 +64,7 @@ namespace Cache.StatefulCache
             }
             catch (Exception ex)
             {
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheController::Get Exception {ex}");
                 var res = new ObjectResult(ex);
                 res.StatusCode = (int)HttpStatusCode.InternalServerError;
                 return res;
@@ -71,6 +75,8 @@ namespace Cache.StatefulCache
         public async Task Put(string key, CancellationToken cancellationToken)
         {
             var request = HttpContext.Request;
+            ServiceEventSource.Current.ServiceMessage(_context, $"CacheController::PUT {request.GetEncodedUrl()}");
+
             using (var reader = new StreamReader(request.Body))
             {
                 var content = await reader.ReadToEndAsync();
@@ -84,6 +90,9 @@ namespace Cache.StatefulCache
         public async Task<ActionResult<string>> Post(string key, CancellationToken cancellationToken)
         {
             var request = HttpContext.Request;
+
+            ServiceEventSource.Current.ServiceMessage(_context, $"CacheController::POST {request.GetEncodedUrl()}");
+
             using (var reader = new StreamReader(request.Body))
             {
                 var content = await reader.ReadToEndAsync();
@@ -102,6 +111,7 @@ namespace Cache.StatefulCache
                 }
                 catch (Exception ex)
                 {
+                    ServiceEventSource.Current.ServiceMessage(_context, $"CacheController::Post Exception {ex}");
                     var res = new ObjectResult(ex);
                     res.StatusCode = (int)HttpStatusCode.InternalServerError;
                     return res;
@@ -112,6 +122,9 @@ namespace Cache.StatefulCache
         [HttpDelete("{key}")]
         public async Task<ActionResult<string>> Delete(string key, CancellationToken cancellationToken)
         {
+            var request = HttpContext.Request;
+            ServiceEventSource.Current.ServiceMessage(_context, $"CacheController::PUT {request.GetEncodedUrl()}");
+
             try
             {
                 var client = await GetCacheServiceClient(key);
@@ -123,6 +136,7 @@ namespace Cache.StatefulCache
             }
             catch (Exception ex)
             {
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheController::Put Exception {ex}");
                 var res = new ObjectResult(ex);
                 res.StatusCode = (int)HttpStatusCode.InternalServerError;
                 return res;
@@ -137,6 +151,7 @@ namespace Cache.StatefulCache
             var resolvedPartition = new ServicePartitionKey(info.LowKey);
 
             return new CacheServiceClient(
+                _context,
                 new CachePartitionClient(
                     new ServicePartitionClient<CacheCommunicationClient>(
                         _clientFactory,
@@ -166,12 +181,14 @@ namespace Cache.StatefulCache
                 {
                     if (InitializePartitionList())
                     {
+                        ServiceEventSource.Current.ServiceMessage(_context, $"CacheController::InitializeAsync: Initialize");
                         _fabricClient = new FabricClient();
                         initPartitionList = true;
                     }
 
                     if (RefreshPartitionList())
                     {
+                        ServiceEventSource.Current.ServiceMessage(_context, $"CacheController::InitializeAsync: Refresh {_lastInitializeTime}");
                         initPartitionList = true;
                     }
                 }
@@ -180,6 +197,7 @@ namespace Cache.StatefulCache
             if (initPartitionList && RefreshPartitionList())
             {
                 // Note: there is a small chance that this gets executed multiple times when _servicePartitionList == null
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheController::InitializeAsync: GetPartitionListAsync");
                 _servicePartitionList = await _fabricClient.QueryManager.GetPartitionListAsync(_context.ServiceUri);
             }
 

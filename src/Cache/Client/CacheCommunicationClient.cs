@@ -10,8 +10,11 @@
 
     public class CacheCommunicationClient : ICommunicationClient, ICache
     {
+        private IStatefulContext _context;
+
         public CacheCommunicationClient(
             CancellationToken token,
+            IStatefulContext context,
             HttpClient httpClient,
             string address,
             ILocalCache localCache)
@@ -20,6 +23,7 @@
             this.Url = new Uri(address);
             this.LocalCache = localCache;
             this.CancellationToken = token;
+            _context = context;
         }
 
         public CancellationToken CancellationToken { get; private set; }
@@ -42,12 +46,15 @@
         {
             if (LocalCache != null)
             {
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::GetAsync: Local: {key}");
                 return await LocalCache.GetAsync(key, token);
             }
             else
             {
                 var builder = new UriBuilder(Url);
                 builder.Path = $"/api/cache/{key}";
+
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::GetAsync: Remote: {builder.Uri}");
                 return await HttpClient.GetByteArrayAsync(builder.Uri);
             }
         }
@@ -65,28 +72,33 @@
         {
             if (LocalCache != null)
             {
-                return LocalCache.RefreshAsync(key, token);
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::RemoveAsync: Local: {key}");
+                return LocalCache.RemoveAsync(key, token);
             }
             else
             {
                 var builder = new UriBuilder(Url);
                 builder.Path = $"/api/cache/{key}";
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::RemoveAsync: Remote: {builder.Uri}");
                 return HttpClient.DeleteAsync(builder.Uri);
             }
         }
 
         public async Task SetAsync(
-            string key, byte[] value,
+            string key,
+            byte[] value,
             CancellationToken token = default(CancellationToken))
         {
             if (LocalCache != null)
             {
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::SetAsync: Local: {key}");
                 await LocalCache.SetAsync(key, value, token);
             }
             else
             {
                 var builder = new UriBuilder(Url);
                 builder.Path = $"/api/cache/{key}";
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::SetAsync: Remote: {builder.Uri}");
                 var byteContent = new ByteArrayContent(value);
                 await HttpClient.PutAsync(builder.Uri, byteContent);
             }
@@ -99,15 +111,37 @@
         {
             if (LocalCache != null)
             {
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::CreateCachedItemAsync: Local: {key}");
                 return await LocalCache.CreateCachedItemAsync(key, value, token);
             }
             else
             {
                 var builder = new UriBuilder(Url);
                 builder.Path = $"/api/cache/{key}";
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClient::CreateCachedItemAsync: Remote: {builder.Uri}");
+
                 var byteContent = new ByteArrayContent(value);
                 var ret = await HttpClient.PostAsync(builder.Uri, byteContent);
                 return await ret.Content.ReadAsByteArrayAsync();
+            }
+        }
+
+        public override string ToString()
+        {
+            if (LocalCache != null)
+            {
+                return $"Local Cache communication client. Url =  {this.Url}";
+            }
+            else
+            {
+                if (HttpClient != null)
+                {
+                    return $"Remote Cache communication client. Url = {this.Url}";
+                }
+                else
+                {
+                    return $"Uninitialized Client. Url = {this.Url}";
+                }
             }
         }
     }

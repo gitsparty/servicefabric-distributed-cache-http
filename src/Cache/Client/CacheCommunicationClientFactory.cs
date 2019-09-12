@@ -36,37 +36,45 @@ namespace Cache.Client
 
         protected override void AbortClient(CacheCommunicationClient client)
         {
+            ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClientFactory::AbortClient: Client = {client}");
         }
 
         protected override Task<CacheCommunicationClient> CreateClientAsync(string endpoint, CancellationToken cancellationToken)
         {
             if (this.IsLocalEndpoint(endpoint))
             {
-                return Task.FromResult(new CacheCommunicationClient(cancellationToken, httpClient: null, address: endpoint, localCache: _localCache));
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClientFactory::CreateClientAsync: Returning LocalEndpoint. Endpoint = {endpoint}");
+                return Task.FromResult(new CacheCommunicationClient(cancellationToken, _context, httpClient: null, address: endpoint, localCache: _localCache));
             }
             else
             {
-                return Task.FromResult(new CacheCommunicationClient(cancellationToken, httpClient: _httpClient, address: endpoint, localCache: null));
+                ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClientFactory::CreateClientAsync: Returning Remote endpoint. Endpoint = {endpoint}");
+                return Task.FromResult(new CacheCommunicationClient(cancellationToken, _context, httpClient: _httpClient, address: endpoint, localCache: null));
             }
         }
 
         protected override bool ValidateClient(CacheCommunicationClient client)
         {
+            ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClientFactory::ValidateClient: Client = {client.ToString()}");
             return true;
         }
 
         protected override bool ValidateClient(string endpoint, CacheCommunicationClient client)
         {
+            ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClientFactory::ValidateClient: Client = {client.ToString()}. Endpoint = {endpoint}");
             return true;
         }
 
-        private static IEnumerable<IExceptionHandler> CreateExceptionHandlers(IEnumerable<IExceptionHandler> additionalHandlers)
+        private static IEnumerable<IExceptionHandler> CreateExceptionHandlers(
+            IEnumerable<IExceptionHandler> additionalHandlers)
         {
             return new[] { new HttpExceptionHandler() }.Union(additionalHandlers ?? Enumerable.Empty<IExceptionHandler>());
         }
 
         private bool IsLocalEndpoint(string address)
         {
+            ServiceEventSource.Current.ServiceMessage(_context, $"CacheCommunicationClientFactory::IsLocalEndpoint: ValidateClient. Address = {address}. ContextNodeAddress = {_context.NodeAddress}");
+
             return address.Contains(_context.NodeAddress, StringComparison.OrdinalIgnoreCase);
         }
     }

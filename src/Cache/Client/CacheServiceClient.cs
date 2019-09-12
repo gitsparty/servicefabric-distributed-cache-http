@@ -8,10 +8,14 @@ namespace Cache.Client
 {
     public class CacheServiceClient : ICacheServiceClient
     {
+        IStatefulContext _context;
         ICachePartitionClient _partitionClient;
 
-        public CacheServiceClient(ICachePartitionClient client)
+        public CacheServiceClient(
+            IStatefulContext context,
+            ICachePartitionClient client)
         {
+            _context = context;
             _partitionClient = client;
         }
 
@@ -22,6 +26,7 @@ namespace Cache.Client
             return _partitionClient.InvokeWithRetryAsync(
                     (client) =>
                     {
+                        ServiceEventSource.Current.ServiceMessage(_context, $"CacheServiceClient::GetAsync: GetAsync {key}");
                         return client.GetAsync(key, token);
                     },
                     token);
@@ -41,6 +46,7 @@ namespace Cache.Client
             return _partitionClient.InvokeWithRetryAsync(
                 (client) =>
                 {
+                    ServiceEventSource.Current.ServiceMessage(_context, $"RemoveAsync::GetAsync: GetAsync {key}");
                     return client.RemoveAsync(key, token);
                 },
                 token);
@@ -53,6 +59,7 @@ namespace Cache.Client
             return _partitionClient.InvokeWithRetryAsync(
                 (client) =>
                 {
+                    ServiceEventSource.Current.ServiceMessage(_context, $"RemoveAsync::SetAsync: GetAsync {key}");
                     return client.SetAsync(key, value, token);
                 },
                 token);
@@ -66,6 +73,7 @@ namespace Cache.Client
             return _partitionClient.InvokeWithRetryAsync(
                 (client) =>
                 {
+                    ServiceEventSource.Current.ServiceMessage(_context, $"CreateCachedItemAsync::SetAsync: GetAsync {key}");
                     return client.CreateCachedItemAsync(key, value, token);
                 },
                 token);
